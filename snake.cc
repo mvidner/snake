@@ -23,6 +23,7 @@ void Display::set(unsigned x, unsigned y, int color) {
     c = '*';
 
   printf("\x1b[%u;%uH%c", y, x, c);
+  fflush(stdout);
 }
 
 enum Direction {
@@ -124,10 +125,9 @@ void loop() {
     d.set(x, y, 0);
     x += dx[dir];
     y += dy[dir];
+    d.set(x, y, 1);
   }
 
-  d.set(x, y, 1);
-  fflush(stdout);
 
   usleep(20000);
 }
