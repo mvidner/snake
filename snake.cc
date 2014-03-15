@@ -7,9 +7,15 @@
 
 class Display {
 public:
+  Display();
   void clear();
   void set(unsigned x, unsigned y, int color); // 1 mark, 0 space
 };
+
+Display::Display() {
+  system("stty cbreak -echo");
+  puts("\x1b[?25l"); // hide cursor
+}
 
 void Display::clear() {
   puts("\x1b[2J");
@@ -103,29 +109,55 @@ public:
 
 class Snake {
 public:
+  Snake(Display& d);
+
+  // Draw the whole snake
+  void draw();
+  // Erase the whole snake
+  void erase();
+  // one step in a direction
+  void step(Direction);
+private:
+  unsigned x, y;
+  Display &display;
 };
-
-Input in;
-unsigned x, y;
-Display d;
-
-void setup() {
-  system("stty cbreak -echo");
-  puts("\x1b[?25l");
-  x = 10; y = 10;
-}
 
 int dx[] = {0,  0, 0, 1, -1};
 int dy[] = {0, -1, 1, 0,  0};
+
+Snake::Snake(Display &d)
+  : display(d)
+{
+  x = 10; y = 10;
+}
+
+void Snake::step(Direction dir) {
+  x += dx[dir];
+  y += dy[dir];
+}
+
+void Snake::draw() {
+  display.set(x, y, 1);
+}
+
+void Snake::erase() {
+  display.set(x, y, 0);
+}
+
+Input in;
+Display d;
+Snake snake(d);
+
+void setup() {
+}
 
 void loop() {
   Direction dir = in.get();
 
   if (dir != NONE) {
-    d.set(x, y, 0);
-    x += dx[dir];
-    y += dy[dir];
-    d.set(x, y, 1);
+    snake.erase();
+    snake.step(dir);
+    snake.draw();
   }
 
 
