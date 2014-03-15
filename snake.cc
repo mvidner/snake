@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <signal.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -92,9 +92,20 @@ private:
   Display& d;
 };
 
+int dx[] = {0,  0, 0, 1, -1};
+int dy[] = {0, -1, 1, 0,  0};
+
 struct Position {
   unsigned x, y;
+  Position operator + (Direction dir);
 };
+
+Position Position::operator +(Direction dir) {
+  Position result;
+  result.x = x + dx[dir];
+  result.y = y + dy[dir];
+  return result;
+}
 
 class Obstacle {
 public:
@@ -111,6 +122,7 @@ class Snake {
 public:
   Snake(Display& d);
 
+  void grow();
   // Draw the whole snake
   void draw();
   // Erase the whole snake
@@ -118,44 +130,65 @@ public:
   // one step in a direction
   void step(Direction);
 private:
-  unsigned x, y;
   Display &display;
+  static const int MAX = 1000;
+  Position body[MAX];
+  unsigned size;
 };
-
-int dx[] = {0,  0, 0, 1, -1};
-int dy[] = {0, -1, 1, 0,  0};
 
 Snake::Snake(Display &d)
   : display(d)
 {
-  x = 10; y = 10;
+  size = 1;
+  body[0].x = 10;
+  body[0].y = 10;
 }
 
 void Snake::step(Direction dir) {
-  x += dx[dir];
-  y += dy[dir];
+  for(unsigned i = size - 1; i > 0; --i) {
+    body[i] = body[i-1];
+  }
+  body[0] = body[0] + dir;
+}
+
+void Snake::grow() {
+  if (size < MAX)
+    ++size;
 }
 
 void Snake::draw() {
-  display.set(x, y, 1);
+  for(unsigned i = 0; i < size; ++i) {
+    display.set(body[i].x, body[i].y, 1);
+  }
 }
 
 void Snake::erase() {
-  display.set(x, y, 0);
+  for(unsigned i = 0; i < size; ++i) {
+    display.set(body[i].x, body[i].y, 0);
+  }
 }
 
 Input in;
 Display d;
 Snake snake(d);
 
+void sighandler(int signal) {
+  puts("\x1b[?25h");
+  system("stty sane");
+  exit(0);
+}
+
 void setup() {
+  signal(SIGINT, sighandler);
 }
 
 void loop() {
   Direction dir = in.get();
-
+  unsigned counter = 0;
   if (dir != NONE) {
     snake.erase();
+    //    if (counter++ % 10 == 0)
+    //      snake.grow();
     snake.step(dir);
     snake.draw();
   }
