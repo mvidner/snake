@@ -5,60 +5,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-class Display {
-public:
-  Display();
-  virtual void clear();
-  virtual void set(unsigned x, unsigned y, int color); // 1 mark, 0 space
-  virtual void sane();
-};
-
-Display::Display() {
-  system("stty cbreak -echo");
-  puts("\x1b[?25l"); // hide cursor
-}
-
-void Display::clear() {
-  puts("\x1b[2J");
-}
-
-void Display::sane() {
-  puts("\x1b[?25h");
-  system("stty sane");
-}
-
-void Display::set(unsigned x, unsigned y, int color) {
-  int c = color;
-  if (c == 0)
-    c = ' ';
-  else if (c == 1)
-    c = '*';
-
-  printf("\x1b[%u;%uH%c", y, x, c);
-  fflush(stdout);
-}
-
-class DebugDisplay: public Display {
-public:
-  DebugDisplay();
-  virtual void clear();
-  virtual void set(unsigned x, unsigned y, int color); // 1 mark, 0 space
-  //  virtual void sane();
-};
-
-DebugDisplay::DebugDisplay() {
-  puts("Debug Display\n");
-}
-
-void DebugDisplay::clear() {
-}
-
-//void DebugDisplay::sane() {
-//}
-
-void DebugDisplay::set(unsigned x, unsigned y, int color) {
-  printf("[%u, %u] %d\n", y, x, color);
-}
+#include "vt100_display.h"
+#include "debug_display.h"
 
 enum Direction {
   NONE, UP, DOWN, RIGHT, LEFT
@@ -201,7 +149,7 @@ void Snake::erase() {
 }
 
 Input in;
-Display d;
+VT100Display d;
 //DebugDisplay d;
 Snake snake(d);
 
