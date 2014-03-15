@@ -181,8 +181,9 @@ void Snake::step(Direction dir) {
 }
 
 void Snake::grow() {
-  if (size < MAX)
+  if (size < MAX) {
     ++size;
+  }
 }
 
 void Snake::draw(bool on) {
@@ -200,8 +201,8 @@ void Snake::erase() {
 }
 
 Input in;
-//Display d;
-DebugDisplay d;
+Display d;
+//DebugDisplay d;
 Snake snake(d);
 
 void sighandler(int signal) {
@@ -215,11 +216,11 @@ void setup() {
 
 void loop() {
   Direction dir = in.get();
-  //  unsigned counter = 0;
+  static unsigned counter = 0;
   if (dir != NONE) {
     snake.erase();
-    //    if (counter++ % 10 == 0)
-    //      snake.grow();
+    if (counter++ % 10 == 0)
+      snake.grow();
     snake.step(dir);
     snake.draw();
   }
