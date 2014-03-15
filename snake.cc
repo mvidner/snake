@@ -8,8 +8,9 @@
 class Display {
 public:
   Display();
-  void clear();
-  void set(unsigned x, unsigned y, int color); // 1 mark, 0 space
+  virtual void clear();
+  virtual void set(unsigned x, unsigned y, int color); // 1 mark, 0 space
+  virtual void sane();
 };
 
 Display::Display() {
@@ -21,6 +22,11 @@ void Display::clear() {
   puts("\x1b[2J");
 }
 
+void Display::sane() {
+  puts("\x1b[?25h");
+  system("stty sane");
+}
+
 void Display::set(unsigned x, unsigned y, int color) {
   int c = color;
   if (c == 0)
@@ -30,6 +36,28 @@ void Display::set(unsigned x, unsigned y, int color) {
 
   printf("\x1b[%u;%uH%c", y, x, c);
   fflush(stdout);
+}
+
+class DebugDisplay: public Display {
+public:
+  DebugDisplay();
+  virtual void clear();
+  virtual void set(unsigned x, unsigned y, int color); // 1 mark, 0 space
+  //  virtual void sane();
+};
+
+DebugDisplay::DebugDisplay() {
+  puts("Debug Display\n");
+}
+
+void DebugDisplay::clear() {
+}
+
+//void DebugDisplay::sane() {
+//}
+
+void DebugDisplay::set(unsigned x, unsigned y, int color) {
+  printf("[%u, %u] %d\n", y, x, color);
 }
 
 enum Direction {
@@ -130,6 +158,7 @@ public:
   // one step in a direction
   void step(Direction);
 private:
+  void draw(bool on);
   Display &display;
   static const int MAX = 1000;
   Position body[MAX];
@@ -156,25 +185,27 @@ void Snake::grow() {
     ++size;
 }
 
-void Snake::draw() {
+void Snake::draw(bool on) {
   for(unsigned i = 0; i < size; ++i) {
-    display.set(body[i].x, body[i].y, 1);
+    display.set(body[i].x, body[i].y, on? 1: 0);
   }
+}
+
+void Snake::draw() {
+  draw(true);
 }
 
 void Snake::erase() {
-  for(unsigned i = 0; i < size; ++i) {
-    display.set(body[i].x, body[i].y, 0);
-  }
+  draw(false);
 }
 
 Input in;
-Display d;
+//Display d;
+DebugDisplay d;
 Snake snake(d);
 
 void sighandler(int signal) {
-  puts("\x1b[?25h");
-  system("stty sane");
+  d.sane();
   exit(0);
 }
 
@@ -184,7 +215,7 @@ void setup() {
 
 void loop() {
   Direction dir = in.get();
-  unsigned counter = 0;
+  //  unsigned counter = 0;
   if (dir != NONE) {
     snake.erase();
     //    if (counter++ % 10 == 0)
