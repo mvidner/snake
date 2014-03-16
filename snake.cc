@@ -20,7 +20,7 @@ int dx[] = {0,  0, 0, 1, -1};
 int dy[] = {0, -1, 1, 0,  0};
 
 struct Position {
-  unsigned x, y;
+  int x, y;
   Position operator + (Direction dir);
   bool operator == (const Position & other) const;
 };
@@ -179,8 +179,20 @@ void sighandler(int signal) {
   exit(0);
 }
 
+void fence_hit(const Obstacle &) {
+  puts("AAAH\n");
+  sighandler(0);
+}
+
+void snake_hit(const Obstacle &) {
+  puts("OUCH\n");
+  sighandler(0);
+}
+
 void setup() {
   signal(SIGINT, sighandler);
+  fence.on_hit(fence_hit);
+  snake.on_hit(snake_hit);
   snake.draw();
 }
 
@@ -193,7 +205,7 @@ void loop() {
     obstacles[i]->test_hit(head);
   }
 
-  usleep(20000);
+  usleep(100000);
 }
 
 int main() {
