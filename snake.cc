@@ -65,11 +65,33 @@ void Obstacle::test_hit(const Position& pos) {
 
 class Fence : public Obstacle {
 public:
+  Fence(Display &display, unsigned w, unsigned h);
   virtual bool is_hit(const Position& pos);
+  void draw();
+private:
+  unsigned width, height;
+  Display &display;
 };
 
+Fence::Fence(Display& d, unsigned w, unsigned h)
+  : width(w)
+  , height(h)
+  , display(d)
+{}
+
 bool Fence::is_hit(const Position& pos) {
-  return pos.x < 0 || pos.y < 0 || pos.x > 50 || pos.y > 30;
+  return pos.x < 0 || pos.y < 0 || (unsigned) pos.x > width || (unsigned) pos.y > height;
+}
+
+void Fence::draw() {
+  for (unsigned i = 0; i < width; ++i) {
+    display.set(i, 0,      1);
+    display.set(i, height, 1);
+  }
+  for (unsigned i = 0; i < height; ++i) {
+    display.set(0,     i, 1);
+    display.set(width, i, 1);
+  }
 }
 
 class Snake : public Obstacle {
@@ -170,7 +192,7 @@ Input in;
 VT100Display d;
 //DebugDisplay d;
 Snake snake(d);
-Fence fence;
+Fence fence(d, 50, 30);
 
 Obstacle* obstacles[] = { &snake, &fence };
 
@@ -192,6 +214,7 @@ void snake_hit(const Obstacle &) {
 void setup() {
   signal(SIGINT, sighandler);
   fence.on_hit(fence_hit);
+  fence.draw();
   snake.on_hit(snake_hit);
   snake.draw();
 }
