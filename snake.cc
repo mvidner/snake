@@ -9,12 +9,23 @@
 #include "debug_display.h"
 class Score {
 public:
-  Score(Display &ad): d(ad) {}
+  Score(Display &d): display(d), value(0) {}
   void add(int i);
-  void display();
+  void draw();
 private:
-  Display& d;
+  Display& display;
+  unsigned value;
 };
+
+void Score::add(int i) {
+  value += i;
+  draw();
+}
+
+void Score::draw() {
+  display.set(3, 0, ' ');
+  printf("%u", value);
+}
 
 int dx[] = {0,  0, 0, 1, -1};
 int dy[] = {0, -1, 1, 0,  0};
@@ -23,6 +34,7 @@ struct Position {
   int x, y;
   Position operator + (Direction dir);
   bool operator == (const Position & other) const;
+  static Position random(unsigned max_x, unsigned max_y);
 };
 
 Position Position::operator +(Direction dir) {
@@ -36,10 +48,17 @@ bool Position::operator == (const Position & other) const {
   return x == other.x && y == other.y;
 }
 
+Position Position::random(unsigned max_x, unsigned max_y) {
+  Position result;
+  result.x = ::random() % max_x;
+  result.y = ::random() % max_y;
+  return result;
+}
+
 class Obstacle {
 public:
   Obstacle();
-  typedef void (*Callback)(const Obstacle &);
+  typedef void (*Callback)(Obstacle &);
   virtual bool is_hit(const Position& pos) = 0;
   void on_hit(Callback);
   // "if is_hit, callback"
@@ -65,7 +84,7 @@ void Obstacle::test_hit(const Position& pos) {
 
 class Fence : public Obstacle {
 public:
-  Fence(Display &display, unsigned w, unsigned h);
+  Fence(Display &display);
   virtual bool is_hit(const Position& pos);
   void draw();
 private:
@@ -73,14 +92,14 @@ private:
   Display &display;
 };
 
-Fence::Fence(Display& d, unsigned w, unsigned h)
-  : width(w)
-  , height(h)
+Fence::Fence(Display& d)
+  : width(d.width())
+  , height(d.height())
   , display(d)
 {}
 
 bool Fence::is_hit(const Position& pos) {
-  return pos.x < 0 || pos.y < 0 || (unsigned) pos.x > width || (unsigned) pos.y > height;
+  return pos.x <= 0 || pos.y <= 0 || (unsigned) pos.x >= width || (unsigned) pos.y >= height;
 }
 
 void Fence::draw() {
@@ -188,27 +207,101 @@ bool Snake::is_hit(const Position& pos) {
   return false;
 }
 
+class Foods : public Obstacle {
+public:
+  Foods(Display &display);
+  virtual bool is_hit(const Position& pos);
+  void draw();
+  void handle_hit();
+private:
+  Display &display;
+  static const unsigned MAX_FOOD = 100;
+  Position items[MAX_FOOD];
+  unsigned item_count;
+  unsigned hit_index;
+
+  Position new_position();
+  void new_food();
+};
+
+Foods::Foods(Display &d)
+  : display(d)
+  , item_count(0)
+{
+  new_food();
+}
+
+bool Foods::is_hit(const Position& pos) {
+  for(unsigned i = 0; i < item_count; ++i) {
+    if (pos == items[i]) {
+      hit_index = i;
+      return true;
+    }
+  }
+  return false;
+}
+
+void Foods::handle_hit() {
+  Position p = new_position();
+  items[hit_index] = p;
+  display.set(p.x, p.y, '@');
+
+  new_food();
+}
+
+void Foods::new_food() {
+  if (item_count >= MAX_FOOD)
+    return;
+  Position p = new_position();
+  items[item_count++] = p;
+  display.set(p.x, p.y, '@');
+}
+
 Input in;
 VT100Display d;
 //DebugDisplay d;
 Snake snake(d);
-Fence fence(d, 50, 30);
+Fence fence(d);
+Foods foods(d);
+Obstacle* obstacles[] = { &snake, &fence, &foods };
+Score score(d);
 
-Obstacle* obstacles[] = { &snake, &fence };
+Position Foods::new_position() {
+  Position p;
+
+  bool p_is_free = true;
+  do {
+    p = Position::random(d.width(), d.height());
+    for (unsigned i = 0; i < sizeof(obstacles)/sizeof(obstacles[0]); ++i) {
+      if (obstacles[i]->is_hit(p)) {
+	p_is_free = false;
+	break;
+      }
+    }
+  } while (!p_is_free);
+
+  return p;
+}
+
 
 void sighandler(int signal) {
   d.sane();
   exit(0);
 }
 
-void fence_hit(const Obstacle &) {
+void fence_hit(Obstacle &) {
   puts("AAAH\n");
   sighandler(0);
 }
 
-void snake_hit(const Obstacle &) {
+void snake_hit(Obstacle &) {
   puts("OUCH\n");
   sighandler(0);
+}
+
+void foods_hit(Obstacle & f) {
+  score.add(1);
+  static_cast<Foods &>(f).handle_hit();
 }
 
 void setup() {
@@ -217,6 +310,7 @@ void setup() {
   fence.draw();
   snake.on_hit(snake_hit);
   snake.draw();
+  foods.on_hit(foods_hit);
 }
 
 void loop() {

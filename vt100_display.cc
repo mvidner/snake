@@ -6,6 +6,10 @@
 VT100Display::VT100Display() {
   system("stty cbreak -echo");
   puts("\x1b[?25l"); // hide cursor
+  FILE * size = popen("stty size", "r");
+  fscanf(size, "%u %u", &height_, &width_);
+  pclose(size);
+  printf("GOT %u %u\n", width_, height_);
 }
 
 void VT100Display::clear() {
@@ -26,4 +30,12 @@ void VT100Display::set(unsigned x, unsigned y, int color) {
 
   printf("\x1b[%u;%uH%c", y, x, c);
   fflush(stdout);
+}
+
+unsigned VT100Display::width() {
+  return width_;
+}
+
+unsigned VT100Display::height() {
+  return height_;
 }
