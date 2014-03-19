@@ -4,7 +4,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
-int Input::get_key() {
+int VT100Input::get_key() {
   fd_set rfds;
   struct timeval tv;
   int retval;
@@ -28,7 +28,7 @@ int Input::get_key() {
   }
 }
 
-Direction Input::get() {
+Direction VT100Input::get() {
   int key;
   if ((key = get_key()) != 27) {
     return NONE;

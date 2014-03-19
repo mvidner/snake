@@ -3,6 +3,7 @@
 #include <signal.h>
 #include <unistd.h>
 
+#include "random.h"
 #include "vt100_input.h"
 
 #include "vt100_display.h"
@@ -50,8 +51,8 @@ bool Position::operator == (const Position & other) const {
 
 Position Position::random(unsigned max_x, unsigned max_y) {
   Position result;
-  result.x = ::random() % max_x;
-  result.y = ::random() % max_y;
+  result.x = myrand() % max_x;
+  result.y = myrand() % max_y;
   return result;
 }
 
@@ -136,7 +137,7 @@ private:
   void move();
 
   Display &display;
-  static const int MAX = 1000;
+  static const unsigned MAX = 1000;
   Position body[MAX];
   unsigned size;
   Direction dir;
@@ -257,7 +258,11 @@ void Foods::new_food() {
   display.set(p.x, p.y, '@');
 }
 
-Input in;
+#ifdef NDS
+NDSInput in;
+#else
+VT100Input in;
+#endif
 VT100Display d;
 //DebugDisplay d;
 Snake snake(d);
