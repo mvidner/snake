@@ -4,9 +4,10 @@
 #include <unistd.h>
 
 #include "random.h"
-#include "vt100_input.h"
+#include "linux/vt100_input.h"
+#include "nds/nds_input.h"
 
-#include "vt100_display.h"
+#include "linux/vt100_display.h"
 #include "debug_display.h"
 class Score {
 public:
@@ -258,7 +259,7 @@ void Foods::new_food() {
   display.set(p.x, p.y, '@');
 }
 
-#ifdef NDS
+#ifdef ARM9
 NDSInput in;
 #else
 VT100Input in;
